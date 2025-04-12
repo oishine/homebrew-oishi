@@ -7,6 +7,23 @@ cask "pcsx2" do
   desc "Open Source PS2 Emulator"
   homepage "https://pcsx2.net"
 
+  livecheck do
+      url :url
+      regex(/^v?(\d+\.\d+\.\d+(-[\w.]+)?)/i)
+      strategy :github_releases do |json, regex|
+        json.map do |release|
+          next if release["draft"] || release["prerelease"]
+
+          match = release["tag_name"]&.match(regex)
+          next if match.blank?
+
+          match[1]
+        end
+      end
+    end
+
+  auto_updates true
+
   app "PCSX2-v#{version}.app", target: "PCSX2.app"
 
   zap trash: [
