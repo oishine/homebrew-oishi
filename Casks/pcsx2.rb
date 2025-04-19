@@ -8,19 +8,19 @@ cask "pcsx2" do
   homepage "https://pcsx2.net"
 
   livecheck do
-      url :url
-      regex(/^v?(\d+\.\d+\.\d+(-[\w.]+)?)/i)
-      strategy :github_releases do |json, regex|
-        json.map do |release|
-          next if release["draft"] || release["prerelease"]
+    url :url
+    regex(/^v?(\d+\.\d+\.\d+(?:-[\w.]+)?)$/i)
+    strategy :github_releases do |json, regex|
+      json.map do |release|
+        next if release["draft"] # allow pre-releases
 
-          match = release["tag_name"]&.match(regex)
-          next if match.blank?
-
-          match[1]
-        end
-      end
+        match = release["tag_name"]&.match(regex)
+        match[1] if match
+      end.compact
     end
+  end
+
+
 
   auto_updates true
 
