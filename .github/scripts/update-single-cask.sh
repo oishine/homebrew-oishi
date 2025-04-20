@@ -114,7 +114,7 @@ else
 fi
 
 PR_RESPONSE=$(curl -s -X POST \
-  -H "Authorization: token $GITHUB_TOKEN" \
+  -H "Authorization: token $GH_PAT" \
   -H "Accept: application/vnd.github.v3+json" \
   "https://api.github.com/repos/$OWNER/$REPO_NAME_ONLY/pulls" \
   -d @- <<EOF
