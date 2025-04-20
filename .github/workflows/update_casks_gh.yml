@@ -1,4 +1,4 @@
-name: Update Casks
+name: Update Casks from GitHub releases
 
 on:
   schedule:
