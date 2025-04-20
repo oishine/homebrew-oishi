@@ -1,5 +1,5 @@
 ## homebrew-oishi
-oishine's homebrew tap repository
+oishine's Homebrew repository
 
 ### Adding the Tap
 
