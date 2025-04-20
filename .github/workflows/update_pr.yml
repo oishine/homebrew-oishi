@@ -30,6 +30,6 @@ jobs:
       - name: Process casks
         run: ./scripts/process-casks.sh
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GH_PAT: ${{ secrets.GH_PAT }}
           REPO_OWNER: "${{ github.repository_owner }}"
           REPO_NAME: "${{ github.repository }}"
