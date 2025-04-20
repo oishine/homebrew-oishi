@@ -1,0 +1,31 @@
+name: Update Casks
+
+on:
+  schedule:
+    - cron: "0 */12 * * *" # Run every 12 hours
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-casks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure git with user identity
+        run: |
+          git config --global user.name "${{ secrets.GIT_USER_NAME }}"
+          git config --global user.email "${{ secrets.GIT_USER_EMAIL }}"
+
+      - name: Copy scripts and make executable
+        run: |
+          mkdir -p scripts
+          cp .github/scripts/*.sh scripts/
+          chmod +x scripts/*.sh
+
+      - name: Process casks
+        run: ./scripts/process-casks.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: "${{ github.repository_owner }}"
+          REPO_NAME: "${{ github.repository }}"
