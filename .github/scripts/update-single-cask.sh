@@ -35,11 +35,11 @@ fi
 # Fetch release information
 if [ "$INCLUDE_PRERELEASE" = "true" ]; then
   # For pre-releases, get all releases and pick the first (which could be a pre-release)
-  RELEASE_DATA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$RELEASES_URL")
+  RELEASE_DATA=$(curl -s -H "Authorization: token $GH_PAT" "$RELEASES_URL")
   LATEST_TAG=$(echo "$RELEASE_DATA" | grep -m 1 '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
 else
   # For stable only, use the latest release endpoint
-  RELEASE_DATA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$RELEASES_URL")
+  RELEASE_DATA=$(curl -s -H "Authorization: token $GH_PAT" "$RELEASES_URL")
   LATEST_TAG=$(echo "$RELEASE_DATA" | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
 fi
 
@@ -48,7 +48,7 @@ if [ -z "$LATEST_TAG" ]; then
   echo "Warning: No releases found for $REPO. Trying alternative approach..."
 
   # Try listing all releases and filter based on pre-release preference
-  RELEASES_DATA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO/releases")
+  RELEASES_DATA=$(curl -s -H "Authorization: token $GH_PAT" "https://api.github.com/repos/$REPO/releases")
 
   if [ "$INCLUDE_PRERELEASE" = "true" ]; then
     # Get the first release regardless of pre-release status
@@ -98,7 +98,7 @@ git checkout -b $BRANCH_NAME
 
 git add $CASK_PATH
 git commit -m "$APP_NAME: v$LATEST_VERSION"
-git push origin $BRANCH_NAME
+git push origin $BRANCH_NAME -f
 
 # Create PR using GitHub API with curl - to YOUR repository
 echo "Creating pull request..."
@@ -114,15 +114,18 @@ else
 fi
 
 PR_RESPONSE=$(curl -s -X POST \
-  -H "Authorization: token $GITHUB_TOKEN" \
+  -H "Authorization: token $GH_PAT" \
   -H "Accept: application/vnd.github.v3+json" \
   "https://api.github.com/repos/$OWNER/$REPO_NAME_ONLY/pulls" \
-  -d "{
-    \"title\": \"$APP_NAME: v$LATEST_VERSION\",
-    \"body\": \"Update $APP_NAME to $LATEST_VERSION\",
-    \"head\": \"$BRANCH_NAME\",
-    \"base\": \"main\"
-  }")
+  -d @- <<EOF
+{
+  "title": "$APP_NAME: v$LATEST_VERSION",
+  "body": "Update $APP_NAME to $LATEST_VERSION",
+  "head": "$BRANCH_NAME",
+  "base": "main"
+}
+EOF
+)
 
 PR_URL=$(echo "$PR_RESPONSE" | grep -o '"html_url": "[^"]*"' | head -1 | cut -d'"' -f4)
 

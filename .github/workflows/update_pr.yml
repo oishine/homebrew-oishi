@@ -5,6 +5,10 @@ on:
     - cron: "0 */12 * * *" # Run every 12 hours
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   update-casks:
     runs-on: ubuntu-latest
@@ -26,6 +30,6 @@ jobs:
       - name: Process casks
         run: ./scripts/process-casks.sh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
           REPO_OWNER: "${{ github.repository_owner }}"
           REPO_NAME: "${{ github.repository }}"
