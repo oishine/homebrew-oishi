@@ -117,12 +117,15 @@ PR_RESPONSE=$(curl -s -X POST \
   -H "Authorization: token $GITHUB_TOKEN" \
   -H "Accept: application/vnd.github.v3+json" \
   "https://api.github.com/repos/$OWNER/$REPO_NAME_ONLY/pulls" \
-  -d "{
-    \"title\": \"$APP_NAME: v$LATEST_VERSION\",
-    \"body\": \"Update $APP_NAME to $LATEST_VERSION\",
-    \"head\": \"$BRANCH_NAME\",
-    \"base\": \"main\"
-  }")
+  -d @- <<EOF
+{
+  "title": "$APP_NAME: v$LATEST_VERSION",
+  "body": "Update $APP_NAME to $LATEST_VERSION",
+  "head": "$BRANCH_NAME",
+  "base": "main"
+}
+EOF
+)
 
 PR_URL=$(echo "$PR_RESPONSE" | grep -o '"html_url": "[^"]*"' | head -1 | cut -d'"' -f4)
 
