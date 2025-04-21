@@ -12,15 +12,12 @@ cask "pcsx2" do
     regex(/^v?(\d+\.\d+\.\d+(?:-[\w.]+)?)$/i)
     strategy :github_releases do |json, regex|
       json.map do |release|
-        next if release["draft"] # allow pre-releases
-
+        next if release["draft"]
         match = release["tag_name"]&.match(regex)
         match[1] if match
       end.compact
     end
   end
-
-
 
   auto_updates true
 
