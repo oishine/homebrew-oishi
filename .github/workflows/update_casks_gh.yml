@@ -1,9 +1,9 @@
-name: Update Casks from GitHub releases
+name: Fetch latest releases from GitHub
 
 on:
   schedule:
     - cron: "0 */12 * * *" # Run every 12 hours
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
 
 permissions:
   contents: write
