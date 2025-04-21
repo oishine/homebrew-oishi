@@ -113,7 +113,7 @@ PR_RESPONSE=$(curl -s -X POST \
   -d @- <<EOF
 {
   "title": "$APP_NAME: v$LATEST_VERSION",
-  "body": "Update $APP_NAME to $LATEST_VERSION",
+  "body": "Update $APP_NAME to v$LATEST_VERSION",
   "head": "$BRANCH_NAME",
   "base": "main"
 }

@@ -36,10 +36,8 @@ jobs:
           gpg --list-secret-keys --keyid-format LONG
         shell: bash
 
-      - name: Copy scripts and make executable
+      - name: Make executable
         run: |
-          mkdir -p scripts
-          cp .github/scripts/*.sh scripts/
           chmod +x scripts/*.sh
 
       - name: Process casks

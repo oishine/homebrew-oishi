@@ -2,7 +2,7 @@
 
 set -e
 
-source .github/scripts/casks-config.sh
+source scripts/casks-config.sh
 
 # Process each cask defined in the configuration
 for CASK_INFO in "${CASKS[@]}"; do
@@ -17,7 +17,7 @@ for CASK_INFO in "${CASKS[@]}"; do
   echo "Pre-release inclusion: $INCLUDE_PRERELEASE"
   echo "============================================="
 
-  ./scripts/update-single-cask.sh "$CASK_PATH" "$REPO" "$APP_NAME" "$INCLUDE_PRERELEASE"
+  ./scripts/update-cask.sh "$CASK_PATH" "$REPO" "$APP_NAME" "$INCLUDE_PRERELEASE"
 
   # Return to main branch for the next cask
   git checkout main
