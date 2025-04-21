@@ -16,10 +16,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Configure git with user identity
+      - name: Configure git
         run: |
           git config --global user.name "${{ secrets.GIT_USER_NAME }}"
           git config --global user.email "${{ secrets.GIT_USER_EMAIL }}"
+
+      - name: Import GPG
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          echo "${{ secrets.GPG_PUBLIC_KEY }}" | gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+
+      - name: Set up GPG
+        run: |
+          gpg --list-secret-keys --keyid-format LONG
+          export GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep 'sec' | awk '{print $2}' | cut -d'/' -f2)
+          git config --global user.signingkey $GPG_KEY_ID
+          git config --global commit.gpgSign true
+          gpg --list-secret-keys --keyid-format LONG
+        shell: bash
 
       - name: Copy scripts and make executable
         run: |
