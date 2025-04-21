@@ -90,7 +90,7 @@ echo "Creating branch: $BRANCH_NAME"
 git checkout -b "$BRANCH_NAME"
 
 git add "$CASK_PATH"
-git commit -m "$APP_NAME: v$LATEST_VERSION"
+git commit -S -m "$APP_NAME: v$LATEST_VERSION"
 git push origin "$BRANCH_NAME" -f
 
 # Create pull request
