@@ -22,63 +22,52 @@ fi
 
 echo "Fetching latest release for $APP_NAME from $REPO (Include pre-releases: $INCLUDE_PRERELEASE)..."
 
-if [ "$INCLUDE_PRERELEASE" = "true" ]; then
-  # If pre-releases are included, fetch all releases and pick the first one
-  RELEASES_URL="https://api.github.com/repos/$REPO/releases"
-  echo "Checking all releases (including pre-releases)"
-else
-  # If only stable releases, use the latest release endpoint (excludes pre-releases)
-  RELEASES_URL="https://api.github.com/repos/$REPO/releases/latest"
-  echo "Checking only stable releases"
-fi
+# Fetch release data
+RELEASES_DATA=$(curl -s -H "Authorization: token $GH_PAT" "https://api.github.com/repos/$REPO/releases")
 
-# Fetch release information
-if [ "$INCLUDE_PRERELEASE" = "true" ]; then
-  # For pre-releases, get all releases and pick the first (which could be a pre-release)
-  RELEASE_DATA=$(curl -s -H "Authorization: token $GH_PAT" "$RELEASES_URL")
-  LATEST_TAG=$(echo "$RELEASE_DATA" | grep -m 1 '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
-else
-  # For stable only, use the latest release endpoint
-  RELEASE_DATA=$(curl -s -H "Authorization: token $GH_PAT" "$RELEASES_URL")
-  LATEST_TAG=$(echo "$RELEASE_DATA" | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
-fi
+# Function to get latest tag
+get_latest_tag() {
+  local json="$1"
+  local include_pre="$2"
 
-# Handle case when no releases are found
-if [ -z "$LATEST_TAG" ]; then
-  echo "Warning: No releases found for $REPO. Trying alternative approach..."
-
-  # Try listing all releases and filter based on pre-release preference
-  RELEASES_DATA=$(curl -s -H "Authorization: token $GH_PAT" "https://api.github.com/repos/$REPO/releases")
-
-  if [ "$INCLUDE_PRERELEASE" = "true" ]; then
-    # Get the first release regardless of pre-release status
-    LATEST_TAG=$(echo "$RELEASES_DATA" | grep -m 1 '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+  if command -v jq >/dev/null 2>&1; then
+    if [ "$include_pre" = "true" ]; then
+      echo "$json" | jq -r '.[0].tag_name'
+    else
+      echo "$json" | jq -r '[.[] | select(.prerelease == false)][0].tag_name'
+    fi
   else
-    # Filter to exclude pre-releases
-    LATEST_TAG=$(echo "$RELEASES_DATA" | grep -B 5 '"prerelease": false' | grep '"tag_name":' | head -1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+    if [ "$include_pre" = "true" ]; then
+      echo "$json" | grep -m 1 '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/'
+    else
+      echo "$json" | grep -B 5 '"prerelease": false' | grep '"tag_name":' | head -1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/'
+    fi
   fi
+}
 
-  if [ -z "$LATEST_TAG" ]; then
-    echo "Warning: Could not find any suitable releases for $REPO. Skipping."
-    exit 0
-  fi
+# Extract tag
+LATEST_TAG=$(get_latest_tag "$RELEASES_DATA" "$INCLUDE_PRERELEASE")
+
+if [ -z "$LATEST_TAG" ]; then
+  echo "Warning: Could not determine the latest tag. Skipping."
+  exit 0
 fi
 
-# Clean version string (remove common prefixes like 'v', 'release-')
-LATEST_VERSION=$(echo $LATEST_TAG | sed -E 's/^[vr]|-release//g')
+# Clean version string (e.g. remove v, release-, build- prefixes)
+LATEST_VERSION=$(echo "$LATEST_TAG" | sed -E 's/^(v|release-|build-)//')
+
 echo "$APP_NAME latest version: $LATEST_VERSION (from tag: $LATEST_TAG)"
 
-# Extract current version from cask file
-CURRENT_VERSION=$(grep -oP 'version ["'"'"']\K[^"'"'"']+' $CASK_PATH || echo "not-found")
+# Extract current version from cask
+CURRENT_VERSION=$(grep -oP 'version ["'"'"']\K[^"'"'"']+' "$CASK_PATH" || echo "not-found")
 echo "$APP_NAME current version in cask: $CURRENT_VERSION"
 
-# Skip if versions are the same
+# Skip if already up to date
 if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ]; then
   echo "$APP_NAME is already up to date. Skipping."
   exit 0
 fi
 
-# Handle case when version wasn't found
 if [ "$CURRENT_VERSION" = "not-found" ]; then
   echo "Warning: Could not find version in $CASK_PATH. Skipping."
   exit 0
@@ -86,21 +75,25 @@ fi
 
 echo "Updating $APP_NAME from version $CURRENT_VERSION to $LATEST_VERSION..."
 
-# Update the version in the cask file
-sed -i "s/version [\"']$CURRENT_VERSION[\"']/version \"$LATEST_VERSION\"/" $CASK_PATH
+# Update cask version
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -i '' -E "s/version [\"']$CURRENT_VERSION[\"']/version \"$LATEST_VERSION\"/" "$CASK_PATH"
+else
+  sed -i -E "s/version [\"']$CURRENT_VERSION[\"']/version \"$LATEST_VERSION\"/" "$CASK_PATH"
+fi
 
-# Create branch, commit, and push changes
+# Create Git branch
 BRANCH_NAME="update-${APP_NAME,,}-$LATEST_VERSION"
 BRANCH_NAME=${BRANCH_NAME// /-}
 
 echo "Creating branch: $BRANCH_NAME"
-git checkout -b $BRANCH_NAME
+git checkout -b "$BRANCH_NAME"
 
-git add $CASK_PATH
+git add "$CASK_PATH"
 git commit -m "$APP_NAME: v$LATEST_VERSION"
-git push origin $BRANCH_NAME -f
+git push origin "$BRANCH_NAME" -f
 
-# Create PR using GitHub API with curl - to YOUR repository
+# Create pull request
 echo "Creating pull request..."
 
 # Extract repo owner and name from GITHUB_REPOSITORY env var

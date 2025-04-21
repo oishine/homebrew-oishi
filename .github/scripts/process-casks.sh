@@ -17,7 +17,6 @@ for CASK_INFO in "${CASKS[@]}"; do
   echo "Pre-release inclusion: $INCLUDE_PRERELEASE"
   echo "============================================="
 
-  # Call the update script for this specific cask
   ./scripts/update-single-cask.sh "$CASK_PATH" "$REPO" "$APP_NAME" "$INCLUDE_PRERELEASE"
 
   # Return to main branch for the next cask
