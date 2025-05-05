@@ -28,5 +28,5 @@ brew untap oishine/homebrew-oishine
 ### Fixing Conflicts
 1. Go to `/usr/local/Homebrew/Library/Taps/oishine/homebrew-oishine`.
 2. Abort rebase operation by running `git rebase --abort`.
-3. Reset the repository to the latest commit by running `git reset --hard HEAD~1`.
+3. Reset the repository by running `git reset --hard HEAD~1`.
 4. Pull the latest changes from the tap by running `git pull`.
