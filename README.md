@@ -6,15 +6,17 @@ Self-maintained [Homebrew](https://brew.sh/) repository.
 To add this tap to your Homebrew installation:
 
 ```bash
-brew tap navialliance/firebrew
+brew tap navialliance/firebrew https://github.com/navialliance/firebrew
 ```
 
 ### App Installation
 
 ```bash
 brew install --cask navialliance/firebrew/appname
+```
 or
-brew install --cask appname
+```
+brew install --cask appname #if there's no duplicate casks
 ```
 
 ### Removing the Tap
