@@ -4,22 +4,17 @@ set -e
 
 source scripts/casks-config.sh
 
-# Process each cask defined in the configuration
 for CASK_INFO in "${CASKS[@]}"; do
-  # Parse cask info
-  CASK_PATH=$(echo $CASK_INFO | cut -d'|' -f1)
-  REPO=$(echo $CASK_INFO | cut -d'|' -f2)
-  APP_NAME=$(echo $CASK_INFO | cut -d'|' -f3)
-  INCLUDE_PRERELEASE=$(echo $CASK_INFO | cut -d'|' -f4)
+  IFS='|' read -r CASK_PATH REPO APP_NAME INCLUDE_PRERELEASE SHA_TYPE <<< "$CASK_INFO"
 
   echo "============================================="
   echo "Processing $APP_NAME ($CASK_PATH) from $REPO"
   echo "Pre-release inclusion: $INCLUDE_PRERELEASE"
+  echo "SHA type: $SHA_TYPE"
   echo "============================================="
 
-  ./scripts/update-cask.sh "$CASK_PATH" "$REPO" "$APP_NAME" "$INCLUDE_PRERELEASE"
+  ./scripts/update-cask.sh "$CASK_PATH" "$REPO" "$APP_NAME" "$INCLUDE_PRERELEASE" "$SHA_TYPE"
 
-  # Return to main branch for the next cask
   git checkout main
 done
 
