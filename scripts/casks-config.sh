@@ -6,6 +6,6 @@
 # SHA: none | single | dual
 CASKS=(
   "Casks/pcsx2.rb|PCSX2/pcsx2|pcsx2|true|single"
-  "Casks/vencordinstaller.rb|Vencord/Installer|vencordinstaller|false|none"
+  "Casks/vencordinstaller.rb|Vencord/Installer|vencordinstaller|false|single"
   "Casks/rquickshare.rb|Martichou/rquickshare|rquickshare|false|dual"
 )
