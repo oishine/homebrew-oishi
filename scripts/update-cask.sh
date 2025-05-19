@@ -52,44 +52,55 @@ sed -i.bak -E "s/version [\"'].*[\"']/version \"$LATEST_VERSION\"/" "$CASK_PATH"
 TEMP_DIR=$(mktemp -d)
 get_filename() { echo "$1" | sed -E 's|.*/([^/]+)$|\1|'; }
 
-# Remove any existing sha256 (handles :no_check, single, and multi-arch)
-sed -i.bak '/^\s*sha256 /d' "$CASK_PATH"
+# Check if SHA_TYPE is none and if the cask has :no_check
+IS_NO_CHECK=$(grep -c "sha256 :no_check" "$CASK_PATH" || true)
 
 if [ "$SHA_TYPE" = "none" ]; then
-  echo "Skipping sha256 update as configured."
-elif [ "$SHA_TYPE" = "dual" ]; then
-  ARM_URL=$(echo "$RELEASES_DATA" | jq -r --arg TAG "$LATEST_TAG" '[.[] | select(.tag_name == $TAG)][0].assets[] | select(.name | test("arm|arm64")) | .browser_download_url' | head -1)
-  INTEL_URL=$(echo "$RELEASES_DATA" | jq -r --arg TAG "$LATEST_TAG" '[.[] | select(.tag_name == $TAG)][0].assets[] | select(.name | test("intel|x86_64|amd64")) | .browser_download_url' | head -1)
-
-  if [ -z "$ARM_URL" ] || [ -z "$INTEL_URL" ]; then
-    echo "❌ ARM or Intel asset not found for $APP_NAME"
-    rm -rf "$TEMP_DIR"
-    exit 1
+  echo "Preserving existing SHA configuration as 'none' was specified."
+  # If no_check doesn't exist but SHA_TYPE is none, we should add it
+  if [ "$IS_NO_CHECK" -eq 0 ]; then
+    sed -i.bak -E "/^  version/ a\\
+  sha256 :no_check
+" "$CASK_PATH"
   fi
+else
+  # Remove any existing sha256 (handles :no_check, single, and multi-arch)
+  sed -i.bak '/^\s*sha256 /d' "$CASK_PATH"
 
-  ARM_FILE="$TEMP_DIR/$(get_filename "$ARM_URL")"
-  INTEL_FILE="$TEMP_DIR/$(get_filename "$INTEL_URL")"
+  if [ "$SHA_TYPE" = "dual" ]; then
+    ARM_URL=$(echo "$RELEASES_DATA" | jq -r --arg TAG "$LATEST_TAG" '[.[] | select(.tag_name == $TAG)][0].assets[] | select(.name | test("arm|arm64")) | .browser_download_url' | head -1)
+    INTEL_URL=$(echo "$RELEASES_DATA" | jq -r --arg TAG "$LATEST_TAG" '[.[] | select(.tag_name == $TAG)][0].assets[] | select(.name | test("intel|x86_64|amd64")) | .browser_download_url' | head -1)
 
-  curl -L "$ARM_URL" -o "$ARM_FILE"
-  curl -L "$INTEL_URL" -o "$INTEL_FILE"
+    if [ -z "$ARM_URL" ] || [ -z "$INTEL_URL" ]; then
+      echo "❌ ARM or Intel asset not found for $APP_NAME"
+      rm -rf "$TEMP_DIR"
+      exit 1
+    fi
 
-  ARM_SHA256=$(shasum -a 256 "$ARM_FILE" | awk '{ print $1 }')
-  INTEL_SHA256=$(shasum -a 256 "$INTEL_FILE" | awk '{ print $1 }')
+    ARM_FILE="$TEMP_DIR/$(get_filename "$ARM_URL")"
+    INTEL_FILE="$TEMP_DIR/$(get_filename "$INTEL_URL")"
 
-  sed -i.bak -E "/^  version/ a\\
+    curl -L "$ARM_URL" -o "$ARM_FILE"
+    curl -L "$INTEL_URL" -o "$INTEL_FILE"
+
+    ARM_SHA256=$(shasum -a 256 "$ARM_FILE" | awk '{ print $1 }')
+    INTEL_SHA256=$(shasum -a 256 "$INTEL_FILE" | awk '{ print $1 }')
+
+    sed -i.bak -E "/^  version/ a\\
   sha256 arm:   \"$ARM_SHA256\",\\
          intel: \"$INTEL_SHA256\"
 " "$CASK_PATH"
 
-elif [ "$SHA_TYPE" = "single" ]; then
-  UNIVERSAL_URL=$(echo "$RELEASES_DATA" | jq -r --arg TAG "$LATEST_TAG" '[.[] | select(.tag_name == $TAG)][0].assets[0].browser_download_url')
-  UNIVERSAL_FILE="$TEMP_DIR/$(get_filename "$UNIVERSAL_URL")"
-  curl -L "$UNIVERSAL_URL" -o "$UNIVERSAL_FILE"
-  UNIVERSAL_SHA256=$(shasum -a 256 "$UNIVERSAL_FILE" | awk '{ print $1 }')
+  elif [ "$SHA_TYPE" = "single" ]; then
+    UNIVERSAL_URL=$(echo "$RELEASES_DATA" | jq -r --arg TAG "$LATEST_TAG" '[.[] | select(.tag_name == $TAG)][0].assets[0].browser_download_url')
+    UNIVERSAL_FILE="$TEMP_DIR/$(get_filename "$UNIVERSAL_URL")"
+    curl -L "$UNIVERSAL_URL" -o "$UNIVERSAL_FILE"
+    UNIVERSAL_SHA256=$(shasum -a 256 "$UNIVERSAL_FILE" | awk '{ print $1 }')
 
-  sed -i.bak -E "/^  version/ a\\
+    sed -i.bak -E "/^  version/ a\\
   sha256 \"$UNIVERSAL_SHA256\"
 " "$CASK_PATH"
+  fi
 fi
 
 rm -rf "$TEMP_DIR"
